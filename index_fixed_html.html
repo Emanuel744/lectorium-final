@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lectorium - Biblioteca Digital I.E. Luis Carlos López</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/components_css .css">
+  <link rel="stylesheet" href="css/enhanced_interactions_css.css">
+  <link rel="stylesheet" href="css/styles_css.css">
+  <link rel="stylesheet" href="css/themes_css.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="glass sticky top-0 z-50 px-6 py-4">
+    <div class="container flex justify-between align-center">
+      <div class="flex align-center space-x-4">
+        <div class="bg-gradient-to-br from-blue-600 to-purple-700 p-3 rounded-xl">
+          <i class="fas fa-university text-white text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold">Lectorium</h1>
+          <p class="text-sm opacity-80">Biblioteca Digital - I.E. Luis Carlos López</p>
+        </div>
+      </div>
+      
+      <nav class="flex align-center space-x-6">
+        <button id="themeToggle" class="p-3 rounded-full hover-scale">
+          <i id="themeIcon" class="fas fa-moon text-xl"></i>
+        </button>
+        
+        <button id="notificationBtn" class="relative micro-interaction">
+          <i class="fas fa-bell text-xl"></i>
+          <span id="notificationCount" class="notification-badge hidden">0</span>
+        </button>
+        
+        <div class="relative">
+          <button id="loginBtn" class="btn-primary">
+            <i class="fas fa-sign-in-alt mr-2"></i>
+            Iniciar Sesión
+          </button>
+          
+          <div id="userMenu" class="hidden">
+            <button id="userMenuBtn" class="user-menu-button">
+              <i class="fas fa-user-circle text-2xl text-purple-600"></i>
+              <span id="userEmail" class="text-sm font-medium"></span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            
+            <div id="userDropdown" class="dropdown-menu hidden">
+              <div class="dropdown-header">
+                <p class="font-semibold" id="dropdownName">Usuario</p>
+                <p class="text-xs opacity-70" id="dropdownEmail">email@ieluiscarloslopez.edu.co</p>
+              </div>
+              
+              <button id="profileBtn" class="dropdown-item">
+                <i class="fas fa-user-circle mr-2"></i> Mi Perfil
+              </button>
+              <button id="historyBtn" class="dropdown-item">
+                <i class="fas fa-history mr-2"></i> Historial
+              </button>
+              <div class="dropdown-divider"></div>
+              <button id="logoutBtn" class="dropdown-item text-red-600">
+                <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <h2 class="hero-title">Lectorium</h2>
+      <p class="hero-subtitle">
+        Accede a miles de recursos académicos, libros digitales, bases de datos especializadas y contenido multimedia educativo
+      </p>
+      
+      <div class="search-bar mb-8">
+        <div class="relative">
+          <i class="fas fa-search search-icon text-xl"></i>
+          <input 
+            type="text" 
+            id="heroSearchInput"
+            class="search-input"
+            placeholder="Buscar libros, artículos, recursos..."
+          >
+        </div>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="heroTotalBooks">0</div>
+          <div>Libros Digitales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="heroAvailableBooks">0</div>
+          <div>Disponibles</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="heroActiveLoans">0</div>
+          <div>Préstamos Activos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">24/7</div>
+          <div>Acceso Disponible</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container py-8">
+    <!-- Navigation Tabs -->
+    <div class="navigation-container">
+      <div class="navigation-tabs">
+        <div class="nav-item active" data-section="dashboard">
+          <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+        </div>
+        <div class="nav-item" data-section="catalogo">
+          <i class="fas fa-books mr-2"></i>Catálogo
+        </div>
+        <div class="nav-item" data-section="loans">
+          <i class="fas fa-book-reader mr-2"></i>Mis Préstamos
+        </div>
+        <div class="nav-item" data-section="bases-datos">
+          <i class="fas fa-database mr-2"></i>Bases de Datos
+        </div>
+        <div class="nav-item" data-section="analytics">
+          <i class="fas fa-chart-bar mr-2"></i>Estadísticas
+        </div>
+        <div class="nav-item" data-section="servicios">
+          <i class="fas fa-concierge-bell mr-2"></i>Servicios
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="content-section fade-in">
+      <div class="welcome-card">
+        <h2 class="welcome-title">Bienvenido a Lectorium</h2>
+        <p class="welcome-subtitle">Sistema de gestión bibliotecaria digital para la I.E. Luis Carlos López</p>
+      </div>
+      
+      <div class="dashboard-stats">
+        <div class="stat-item">
+          <div class="stat-content">
+            <div>
+              <p class="stat-label">Total Libros</p>
+              <p class="stat-value" id="totalBooksCount">0</p>
+            </div>
+            <div class="stat-icon bg-blue">
+              <i class="fas fa-book text-blue-600 text-2xl"></i>
+            </div>
+          </div>
+          <p class="stat-description">En el catálogo</p>
+        </div>
+        
+        <div class="stat-item">
+          <div class="stat-content">
+            <div>
+              <p class="stat-label">Disponibles</p>
+              <p class="stat-value" id="availableBooksCount">0</p>
+            </div>
+            <div class="stat-icon bg-green">
+              <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+            </div>
+          </div>
+          <p class="stat-description">Para préstamo</p>
+        </div>
+        
+        <div class="stat-item">
+          <div class="stat-content">
+            <div>
+              <p class="stat-label">Mis Préstamos</p>
+              <p class="stat-value" id="myLoansCount">0</p>
+            </div>
+            <div class="stat-icon bg-purple">
+              <i class="fas fa-book-reader text-purple-600 text-2xl"></i>
+            </div>
+          </div>
+          <p class="stat-description">Activos</p>
+        </div>
+        
+        <div class="stat-item">
+          <div class="stat-content">
+            <div>
+              <p class="stat-label">Vencimientos</p>
+              <p class="stat-value" id="dueSoonCount">0</p>
+            </div>
+            <div class="stat-icon bg-orange">
+              <i class="fas fa-clock text-orange-600 text-2xl"></i>
+            </div>
+          </div>
+          <p class="stat-description">Esta semana</p>
+        </div>
+      </div>
+      
+      <div class="dashboard-grid">
+        <div class="card">
+          <h3 class="card-title">Libros Recientes</h3>
+          <div id="recentBooks" class="space-y-3"></div>
+        </div>
+        
+        <div class="card">
+          <h3 class="card-title">Acciones Rápidas</h3>
+          <div class="space-y-3">
+            <button class="quick-action-btn" onclick="window.showSection('catalogo')">
+              <div class="flex align-center space-x-3">
+                <i class="fas fa-search text-purple-600 text-xl"></i>
+                <div>
+                  <p class="font-semibold">Buscar Libros</p>
+                  <p class="text-sm opacity-70">Explora nuestro catálogo completo</p>
+                </div>
+              </div>
+            </button>
+            
+            <button class="quick-action-btn" onclick="window.showSection('loans')">
+              <div class="flex align-center space-x-3">
+                <i class="fas fa-book-reader text-blue-600 text-xl"></i>
+                <div>
+                  <p class="font-semibold">Ver Mis Préstamos</p>
+                  <p class="text-sm opacity-70">Gestiona tus libros prestados</p>
+                </div>
+              </div>
+            </button>
+            
+            <button class="quick-action-btn" onclick="window.showNotification('Función en desarrollo', 'info')">
+              <div class="flex align-center space-x-3">
+                <i class="fas fa-qrcode text-green-600 text-xl"></i>
+                <div>
+                  <p class="font-semibold">Escanear ISBN</p>
+                  <p class="text-sm opacity-70">Busca libros por código de barras</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Catalog Section -->
+    <section id="catalogo" class="content-section hidden">
+      <div class="search-container">
+        <div class="search-filters">
+          <div class="search-input-container">
+            <i class="fas fa-search search-input-icon"></i>
+            <input 
+              type="text" 
+              id="searchInput" 
+              class="search-field"
+              placeholder="Buscar por título, autor o ISBN..."
+            >
+          </div>
+          <select id="categoryFilter" class="category-select">
+            <option value="">Todas las categorías</option>
+            <option value="clasico">Clásicos</option>
+            <option value="moderno">Modernos</option>
+            <option value="ficcion">Ficción</option>
+            <option value="ciencia">Ciencia</option>
+            <option value="historia">Historia</option>
+            <option value="infantil">Infantil</option>
+            <option value="juvenil">Juvenil</option>
+          </select>
+          <button id="searchBtn" class="search-button">
+            <i class="fas fa-search mr-2"></i> Buscar
+          </button>
+        </div>
+        <div id="activeFilters" class="active-filters hidden"></div>
+      </div>
+      
+      <div id="loadingBooks" class="loading-container hidden">
+        <div class="spinner"></div>
+      </div>
+      
+      <div id="booksGrid" class="books-grid"></div>
+      
+      <div id="noResults" class="no-results hidden">
+        <i class="fas fa-search text-gray-300 text-6xl mb-4"></i>
+        <p class="text-gray-500 text-lg">No se encontraron libros con esos criterios</p>
+      </div>
+    </section>
+
+    <!-- Loans Section -->
+    <section id="loans" class="content-section hidden">
+      <div class="loans-container">
+        <h2 class="section-header">Mis Préstamos Activos</h2>
+        <div id="loansContainer" class="space-y-4"></div>
+      </div>
+    </section>
+
+    <!-- Databases Section -->
+    <section id="bases-datos" class="content-section hidden">
+      <h3 class="section-title">Bases de Datos Especializadas</h3>
+      
+      <div class="category-filter">
+        <button class="filter-btn active">Todas</button>
+        <button class="filter-btn">Ciencias</button>
+        <button class="filter-btn">Ingeniería</button>
+        <button class="filter-btn">Humanidades</button>
+        <button class="filter-btn">Medicina</button>
+        <button class="filter-btn">Acceso Abierto</button>
+      </div>
+
+      <div class="resource-grid">
+        <div class="resource-card">
+          <div class="resource-header gradient-bg">
+            <i class="fas fa-database text-white text-4xl"></i>
+          </div>
+          <div class="resource-content">
+            <div class="resource-info">
+              <h4 class="resource-title">EBSCO Academic</h4>
+              <span class="badge badge-success">Suscrito</span>
+            </div>
+            <p class="resource-description">Base de datos multidisciplinaria con acceso a más de 10,000 publicaciones académicas revisadas por pares.</p>
+            <div class="resource-actions">
+              <button class="btn-primary flex-1">Acceder</button>
+              <button class="btn-secondary">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="resource-card">
+          <div class="resource-header bg-red-gradient">
+            <i class="fas fa-microscope text-white text-4xl"></i>
+          </div>
+          <div class="resource-content">
+            <div class="resource-info">
+              <h4 class="resource-title">Science Direct</h4>
+              <span class="badge badge-success">Suscrito</span>
+            </div>
+            <p class="resource-description">Plataforma líder en investigación científica con acceso a revistas de Elsevier en ciencias, tecnología y medicina.</p>
+            <div class="resource-actions">
+              <button class="btn-primary flex-1">Acceder</button>
+              <button class="btn-secondary">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="resource-card">
+          <div class="resource-header bg-blue-gradient">
+            <i class="fas fa-book-open text-white text-4xl"></i>
+          </div>
+          <div class="resource-content">
+            <div class="resource-info">
+              <h4 class="resource-title">SpringerLink</h4>
+              <span class="badge badge-success">Suscrito</span>
+            </div>
+            <p class="resource-description">Acceso a libros, revistas y referencias de Springer en ciencias, tecnología, medicina y humanidades.</p>
+            <div class="resource-actions">
+              <button class="btn-primary flex-1">Acceder</button>
+              <button class="btn-secondary">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="resource-card">
+          <div class="resource-header bg-green-gradient">
+            <i class="fas fa-globe text-white text-4xl"></i>
+          </div>
+          <div class="resource-content">
+            <div class="resource-info">
+              <h4 class="resource-title">DOAJ</h4>
+              <span class="badge badge-info">Acceso Abierto</span>
+            </div>
+            <p class="resource-description">Directorio de revistas de acceso abierto con más de 17,000 revistas de alta calidad de todo el mundo.</p>
+            <div class="resource-actions">
+              <button class="btn-primary flex-1">Acceder</button>
+              <button class="btn-secondary">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="resource-card">
+          <div class="resource-header bg-purple-gradient">
+            <i class="fas fa-users text-white text-4xl"></i>
+          </div>
+          <div class="resource-content">
+            <div class="resource-info">
+              <h4 class="resource-title">JSTOR</h4>
+              <span class="badge badge-success">Suscrito</span>
+            </div>
+            <p class="resource-description">Archivo digital de revistas académicas, libros y fuentes primarias en humanidades y ciencias sociales.</p>
+            <div class="resource-actions">
+              <button class="btn-primary flex-1">Acceder</button>
+              <button class="btn-secondary">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="resource-card">
+          <div class="resource-header bg-yellow-gradient">
+            <i class="fas fa-search text-white text-4xl"></i>
+          </div>
+          <div class="resource-content">
+            <div class="resource-info">
+              <h4 class="resource-title">Google Scholar</h4>
+              <span class="badge badge-info">Gratuito</span>
+            </div>
+            <p class="resource-description">Buscador especializado en literatura académica: artículos, tesis, libros, abstracts y informes.</p>
+            <div class="resource-actions">
+              <button class="btn-primary flex-1">Acceder</button>
+              <button class="btn-secondary">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Analytics Section -->
+    <section id="analytics" class="content-section hidden">
+      <div class="analytics-grid">
+        <div class="chart-container">
+          <h3 class="chart-title">Préstamos Mensuales</h3>
+          <canvas id="monthlyChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div class="chart-container">
+          <h3 class="chart-title">Distribución por Categorías</h3>
+          <canvas id="categoryChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+      
+      <div class="top-books-container">
+        <h3 class="section-header">Libros Más Solicitados</h3>
+        <div id="topBooks" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="servicios" class="content-section hidden">
+      <h3 class="section-title">Servicios Especializados</h3>
+      <div class="services-placeholder">
+        <div class="placeholder-content">
+          <i class="fas fa-concierge-bell placeholder-icon"></i>
+          <p class="placeholder-title">Servicios en desarrollo</p>
+          <p class="placeholder-subtitle">Asesorías, formación y apoyo a la investigación</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-section">
+          <h4 class="footer-title">Lectorium</h4>
+          <p class="footer-text">Centro de Recursos para el Aprendizaje y la Investigación</p>
+        </div>
+        <div class="footer-section">
+          <h5 class="footer-subtitle">Recursos</h5>
+          <ul class="footer-list">
+            <li><a href="#" class="footer-link">Catálogo OPAC</a></li>
+            <li><a href="#" class="footer-link">Bases de Datos</a></li>
+            <li><a href="#" class="footer-link">Repositorio</a></li>
+            <li><a href="#" class="footer-link">Multimedia</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h5 class="footer-subtitle">Servicios</h5>
+          <ul class="footer-list">
+            <li><a href="#" class="footer-link">Préstamos</a></li>
+            <li><a href="#" class="footer-link">Formación</a></li>
+            <li><a href="#" class="footer-link">Asesorías</a></li>
+            <li><a href="#" class="footer-link">Soporte Técnico</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h5 class="footer-subtitle">Contacto</h5>
+          <ul class="footer-list">
+            <li><i class="fas fa-envelope mr-2"></i>lectoriumbiblioteca@gmail.com</li>
+            <li><i class="fas fa-phone mr-2"></i>+57 313 6116029</li>
+            <li><i class="fas fa-map-marker-alt mr-2"></i>Cartagena, Colombia</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 Lectorium. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modals and Widgets -->
+  <div id="toastContainer"></div>
+  
+  <div id="authModal" class="modal-overlay hidden">
+    <div class="auth-modal">
+      <div class="auth-header">
+        <div class="auth-icon">
+          <i class="fas fa-book-open text-white text-3xl"></i>
+        </div>
+        <h2 id="authTitle" class="auth-title">Iniciar Sesión</h2>
+        <p id="authSubtitle" class="auth-subtitle">Accede a la biblioteca digital</p>
+        <div class="auth-notice">
+          <i class="fas fa-info-circle"></i>
+          Exclusivo para estudiantes y docentes de I.E. Luis Carlos López
+        </div>
+      </div>
+      
+      <div id="authError" class="alert alert-error hidden"></div>
+      
+      <form id="authForm">
+        <div class="form-fields">
+          <div id="nameField" class="form-group hidden">
+            <label class="form-label">Nombre completo</label>
+            <div class="input-with-icon">
+              <i class="fas fa-user input-icon"></i>
+              <input id="fullName" type="text" class="form-input" placeholder="Juan Pérez">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="email">Correo electrónico</label>
+            <div class="input-with-icon">
+              <i class="fas fa-envelope input-icon"></i>
+              <input id="email" type="email" class="form-input" placeholder="tu.nombre@ieluiscarloslopez.edu.co" required>
+            </div>
+            <p class="form-hint">Solo correos institucionales @ieluiscarloslopez.edu.co</p>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <div class="input-with-icon">
+              <i class="fas fa-lock input-icon"></i>
+              <input id="password" type="password" class="form-input" placeholder="••••••••" required>
+              <button type="button" id="togglePassword" class="password-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div id="confirmPasswordField" class="form-group hidden">
+            <label class="form-label">Confirmar contraseña</label>
+            <div class="input-with-icon">
+              <i class="fas fa-lock input-icon"></i>
+              <input id="confirmPassword" type="password" class="form-input" placeholder="••••••••">
+            </div>
+          </div>
+        </div>
+        
+        <div class="auth-actions">
+          <button type="submit" id="authSubmitBtn" class="btn-primary w-full">Iniciar Sesión</button>
+          <button type="button" id="authToggleBtn" class="auth-toggle">¿No tienes cuenta? Regístrate</button>
+          <button type="button" id="authCancelBtn" class="auth-cancel">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div id="bookModal" class="modal-overlay hidden">
+    <div class="book-modal">
+      <div id="bookModalContent"></div>
+    </div>
+  </div>
+
+  <div class="chat-widget">
+    <button id="chatToggle" class="chat-toggle-btn">
+      <i class="fas fa-comments text-2xl"></i>
+    </button>
+  </div>
+
+  <div id="chatWindow" class="chat-window hidden">
+    <div class="chat-header">
+      <div class="chat-info">
+        <div>
+          <h4 class="chat-title">Asistente Lectorium</h4>
+          <p class="chat-status">En línea</p>
+        </div>
+        <button id="chatClose" class="chat-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-message bot-message">
+        <p class="text-sm">¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?</p>
+      </div>
+    </div>
+    <div class="chat-input-container">
+      <div class="chat-input-wrapper">
+        <input type="text" id="chatInput" class="chat-input" placeholder="Escribe tu pregunta...">
+        <button id="chatSend" class="chat-send">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Files -->
+  <script src="js/interactive_features.js"></script>
+  <script src="js/global_functions.js"></script>
+  <script type="module" src="js/app_js.js"></script>
+</body>
+</html>
