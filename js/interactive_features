@@ -1,0 +1,527 @@
+// Interactive features for full navigation and functionality
+
+// Theme toggle functionality
+function initializeThemeToggle() {
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  
+  if (!themeToggle) return;
+  
+  // Load saved theme
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+  
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+    
+    window.showNotification(`Tema cambiado a ${newTheme === 'light' ? 'claro' : 'oscuro'}`, 'info');
+  });
+  
+  function updateThemeIcon(theme) {
+    if (!themeIcon) return;
+    themeIcon.className = theme === 'light' 
+      ? 'fas fa-moon text-xl' 
+      : 'fas fa-sun text-xl text-yellow-400';
+  }
+}
+
+// Authentication system
+function initializeAuthSystem() {
+  const loginBtn = document.getElementById('loginBtn');
+  const authModal = document.getElementById('authModal');
+  const authForm = document.getElementById('authForm');
+  const authToggleBtn = document.getElementById('authToggleBtn');
+  const authCancelBtn = document.getElementById('authCancelBtn');
+  const userMenu = document.getElementById('userMenu');
+  const userMenuBtn = document.getElementById('userMenuBtn');
+  const userDropdown = document.getElementById('userDropdown');
+  const logoutBtn = document.getElementById('logoutBtn');
+  
+  let isLoginMode = true;
+  
+  // Show login modal
+  if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+      authModal.classList.remove('hidden');
+    });
+  }
+  
+  // Close modal
+  if (authCancelBtn) {
+    authCancelBtn.addEventListener('click', () => {
+      authModal.classList.add('hidden');
+    });
+  }
+  
+  // Toggle between login and register
+  if (authToggleBtn) {
+    authToggleBtn.addEventListener('click', () => {
+      isLoginMode = !isLoginMode;
+      updateAuthMode(isLoginMode);
+    });
+  }
+  
+  // Form submission
+  if (authForm) {
+    authForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleAuthSubmit(isLoginMode);
+    });
+  }
+  
+  // User menu toggle
+  if (userMenuBtn) {
+    userMenuBtn.addEventListener('click', () => {
+      userDropdown.classList.toggle('hidden');
+    });
+  }
+  
+  // Logout
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      handleLogout();
+      userDropdown.classList.add('hidden');
+    });
+  }
+  
+  function updateAuthMode(isLogin) {
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const nameField = document.getElementById('nameField');
+    const confirmPasswordField = document.getElementById('confirmPasswordField');
+    
+    if (isLogin) {
+      authTitle.textContent = 'Iniciar Sesión';
+      authSubtitle.textContent = 'Accede a la biblioteca digital';
+      authSubmitBtn.textContent = 'Iniciar Sesión';
+      authToggleBtn.textContent = '¿No tienes cuenta? Regístrate';
+      nameField.classList.add('hidden');
+      confirmPasswordField.classList.add('hidden');
+    } else {
+      authTitle.textContent = 'Crear Cuenta';
+      authSubtitle.textContent = 'Únete a la biblioteca digital';
+      authSubmitBtn.textContent = 'Registrarse';
+      authToggleBtn.textContent = '¿Ya tienes cuenta? Inicia sesión';
+      nameField.classList.remove('hidden');
+      confirmPasswordField.classList.remove('hidden');
+    }
+  }
+  
+  function handleAuthSubmit(isLogin) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+      showAuthError('Por favor completa todos los campos');
+      return;
+    }
+    
+    if (!email.endsWith('@ieluiscarloslopez.edu.co')) {
+      showAuthError('Solo se permiten correos institucionales @ieluiscarloslopez.edu.co');
+      return;
+    }
+    
+    // Simulate authentication
+    const userName = email.split('@')[0];
+    
+    // Store user session
+    window.currentUser = {
+      email: email,
+      name: userName,
+      displayName: userName.charAt(0).toUpperCase() + userName.slice(1)
+    };
+    
+    // Update UI
+    loginBtn.classList.add('hidden');
+    userMenu.classList.remove('hidden');
+    
+    const userEmail = document.getElementById('userEmail');
+    const dropdownName = document.getElementById('dropdownName');
+    const dropdownEmail = document.getElementById('dropdownEmail');
+    
+    if (userEmail) userEmail.textContent = window.currentUser.displayName;
+    if (dropdownName) dropdownName.textContent = window.currentUser.displayName;
+    if (dropdownEmail) dropdownEmail.textContent = window.currentUser.email;
+    
+    authModal.classList.add('hidden');
+    
+    window.showNotification(isLogin ? '¡Bienvenido de nuevo!' : '¡Cuenta creada exitosamente!', 'success');
+    
+    // Update dashboard after login
+    setTimeout(() => {
+      window.updateDashboardStats();
+    }, 500);
+  }
+  
+  function handleLogout() {
+    window.currentUser = null;
+    
+    loginBtn.classList.remove('hidden');
+    userMenu.classList.add('hidden');
+    
+    // Clear user-specific data
+    window.userLoansData = [];
+    window.updateDashboardStats();
+    window.updateLoansList();
+    
+    window.showNotification('Sesión cerrada exitosamente', 'info');
+  }
+  
+  function showAuthError(message) {
+    const authError = document.getElementById('authError');
+    if (authError) {
+      authError.textContent = message;
+      authError.classList.remove('hidden');
+      setTimeout(() => authError.classList.add('hidden'), 5000);
+    }
+  }
+  
+  // Password toggle
+  const togglePassword = document.getElementById('togglePassword');
+  if (togglePassword) {
+    togglePassword.addEventListener('click', () => {
+      const passwordField = document.getElementById('password');
+      const confirmPasswordField = document.getElementById('confirmPassword');
+      const isPassword = passwordField.type === 'password';
+      
+      passwordField.type = isPassword ? 'text' : 'password';
+      if (confirmPasswordField) {
+        confirmPasswordField.type = isPassword ? 'text' : 'password';
+      }
+      
+      togglePassword.innerHTML = `<i class="fas fa-eye${isPassword ? '-slash' : ''}"></i>`;
+    });
+  }
+}
+
+// Search functionality
+function initializeSearch() {
+  const searchBtn = document.getElementById('searchBtn');
+  const searchInput = document.getElementById('searchInput');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const heroSearchInput = document.getElementById('heroSearchInput');
+  
+  // Main search functionality
+  function performSearch() {
+    const searchTerm = searchInput?.value.toLowerCase().trim() || '';
+    const category = categoryFilter?.value || '';
+    
+    let books = window.getBooks();
+    
+    // Filter by search term
+    if (searchTerm) {
+      books = books.filter(book => 
+        book.titulo.toLowerCase().includes(searchTerm) ||
+        book.autor.toLowerCase().includes(searchTerm) ||
+        book.isbn.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Filter by category
+    if (category) {
+      books = books.filter(book => book.categoria === category);
+    }
+    
+    // Update display
+    const booksGrid = document.getElementById('booksGrid');
+    const noResults = document.getElementById('noResults');
+    
+    if (books.length === 0) {
+      booksGrid.innerHTML = '';
+      noResults?.classList.remove('hidden');
+    } else {
+      noResults?.classList.add('hidden');
+      displayFilteredBooks(books);
+    }
+    
+    // Show active filters
+    updateActiveFilters(searchTerm, category);
+    
+    window.showNotification(`Se encontraron ${books.length} resultados`, 'info');
+  }
+  
+  function displayFilteredBooks(books) {
+    const booksGrid = document.getElementById('booksGrid');
+    if (!booksGrid) return;
+    
+    booksGrid.innerHTML = books.map(book => `
+      <div class="glass rounded-xl overflow-hidden book-card cursor-pointer">
+        <div class="relative">
+          <div class="bg-gradient-to-br from-purple-500 to-pink-600 h-48 flex align-center justify-center">
+            <i class="fas fa-book text-white text-5xl opacity-80"></i>
+          </div>
+          <div class="absolute top-2 right-2 bg-${book.disponible ? 'green' : 'red'}-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+            ${book.disponible ? 'Disponible' : 'Prestado'}
+          </div>
+        </div>
+        <div class="p-4">
+          <h3 class="font-semibold text-lg mb-1">${book.titulo}</h3>
+          <p class="text-sm opacity-70 mb-2">${book.autor}</p>
+          <p class="text-xs opacity-60 mb-3">ISBN: ${book.isbn}</p>
+          <div class="flex space-x-2">
+            <button onclick="event.stopPropagation(); window.requestBook('${book.id}')" 
+              class="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-semibold micro-interaction ${!book.disponible ? 'opacity-50 cursor-not-allowed' : ''}"
+              ${!book.disponible ? 'disabled' : ''}
+            >
+              ${book.disponible ? 'Solicitar' : 'No disponible'}
+            </button>
+            <button onclick="event.stopPropagation(); window.showBookDetails('${book.id}')" class="p-2 glass rounded-lg micro-interaction">
+              <i class="fas fa-info-circle"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  function updateActiveFilters(searchTerm, category) {
+    const activeFilters = document.getElementById('activeFilters');
+    if (!activeFilters) return;
+    
+    const filters = [];
+    
+    if (searchTerm) filters.push(`Búsqueda: "${searchTerm}"`);
+    if (category) {
+      const categoryText = categoryFilter?.options[categoryFilter.selectedIndex]?.text || category;
+      filters.push(`Categoría: ${categoryText}`);
+    }
+    
+    if (filters.length > 0) {
+      activeFilters.classList.remove('hidden');
+      activeFilters.innerHTML = filters.map(filter => `
+        <span class="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-sm font-medium">
+          ${filter}
+          <button onclick="window.clearFilters()" class="ml-2 hover:text-purple-900">
+            <i class="fas fa-times"></i>
+          </button>
+        </span>
+      `).join('');
+    } else {
+      activeFilters.classList.add('hidden');
+    }
+  }
+  
+  // Event listeners
+  if (searchBtn) {
+    searchBtn.addEventListener('click', performSearch);
+  }
+  
+  if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+  }
+  
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', performSearch);
+  }
+  
+  // Hero search
+  if (heroSearchInput) {
+    heroSearchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const query = e.target.value.trim();
+        if (query) {
+          window.showSection('catalogo');
+          setTimeout(() => {
+            if (searchInput) {
+              searchInput.value = query;
+              performSearch();
+            }
+          }, 100);
+        }
+      }
+    });
+  }
+}
+
+// Chat functionality
+function initializeChat() {
+  const chatToggle = document.getElementById('chatToggle');
+  const chatWindow = document.getElementById('chatWindow');
+  const chatClose = document.getElementById('chatClose');
+  const chatInput = document.getElementById('chatInput');
+  const chatSend = document.getElementById('chatSend');
+  const chatMessages = document.getElementById('chatMessages');
+  
+  function toggleChat() {
+    const isVisible = !chatWindow.classList.contains('hidden');
+    if (isVisible) {
+      chatWindow.classList.add('hidden');
+    } else {
+      chatWindow.classList.remove('hidden');
+      chatInput?.focus();
+    }
+  }
+  
+  function sendMessage() {
+    const message = chatInput?.value.trim();
+    if (!message) return;
+    
+    // Add user message
+    addChatMessage(message, 'user');
+    chatInput.value = '';
+    
+    // Show typing indicator
+    setTimeout(() => {
+      const response = generateBotResponse(message);
+      addChatMessage(response, 'bot');
+    }, 1000);
+  }
+  
+  function addChatMessage(message, sender) {
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${sender}-message mb-3`;
+    messageDiv.innerHTML = `<p class="text-sm">${message}</p>`;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  
+  function generateBotResponse(message) {
+    const lowerMessage = message.toLowerCase();
+    
+    const responses = {
+      hola: '¡Hola! ¿En qué puedo ayudarte con la biblioteca?',
+      buscar: 'Puedes buscar libros en la sección "Catálogo" usando el título, autor o ISBN.',
+      prestamo: 'Para solicitar un préstamo, busca el libro y haz clic en "Solicitar". Necesitas iniciar sesión primero.',
+      ayuda: 'Estoy aquí para ayudarte. Puedes preguntarme sobre búsquedas, préstamos, bases de datos o servicios.',
+      default: 'Gracias por tu mensaje. ¿Puedes ser más específico sobre lo que necesitas?'
+    };
+    
+    for (const [key, response] of Object.entries(responses)) {
+      if (lowerMessage.includes(key)) {
+        return response;
+      }
+    }
+    
+    return responses.default;
+  }
+  
+  // Event listeners
+  if (chatToggle) {
+    chatToggle.addEventListener('click', toggleChat);
+  }
+  
+  if (chatClose) {
+    chatClose.addEventListener('click', toggleChat);
+  }
+  
+  if (chatSend) {
+    chatSend.addEventListener('click', sendMessage);
+  }
+  
+  if (chatInput) {
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  }
+}
+
+// Navigation functionality
+function initializeNavigation() {
+  const navItems = document.querySelectorAll('.nav-item');
+  
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const section = item.getAttribute('data-section');
+      if (section) {
+        window.showSection(section);
+      }
+    });
+  });
+  
+  // Notification button
+  const notificationBtn = document.getElementById('notificationBtn');
+  if (notificationBtn) {
+    notificationBtn.addEventListener('click', () => {
+      const loans = window.getUserLoans();
+      if (loans.length > 0) {
+        window.showSection('loans');
+      } else {
+        window.showNotification('No tienes notificaciones pendientes', 'info');
+      }
+    });
+  }
+}
+
+// Database filters
+function initializeDatabaseFilters() {
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active from all buttons
+      filterBtns.forEach(b => b.classList.remove('active'));
+      // Add active to clicked button
+      btn.classList.add('active');
+      
+      const filterType = btn.textContent.trim();
+      window.showNotification(`Filtrando por: ${filterType}`, 'info');
+    });
+  });
+}
+
+// Close modals when clicking outside
+function initializeModalHandlers() {
+  window.addEventListener('click', (e) => {
+    const authModal = document.getElementById('authModal');
+    const bookModal = document.getElementById('bookModal');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (e.target === authModal) {
+      authModal.classList.add('hidden');
+    }
+    
+    if (e.target === bookModal) {
+      bookModal.classList.add('hidden');
+    }
+    
+    // Close user dropdown when clicking outside
+    const userMenu = document.getElementById('userMenu');
+    if (userDropdown && userMenu && !userMenu.contains(e.target)) {
+      userDropdown.classList.add('hidden');
+    }
+  });
+  
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      // Close all modals
+      document.getElementById('authModal')?.classList.add('hidden');
+      document.getElementById('bookModal')?.classList.add('hidden');
+      document.getElementById('chatWindow')?.classList.add('hidden');
+    }
+  });
+}
+
+// Initialize all interactive features
+function initializeAllFeatures() {
+  console.log('Initializing interactive features...');
+  
+  initializeThemeToggle();
+  initializeAuthSystem();
+  initializeSearch();
+  initializeChat();
+  initializeNavigation();
+  initializeDatabaseFilters();
+  initializeModalHandlers();
+  
+  console.log('All interactive features initialized');
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeAllFeatures);
+} else {
+  initializeAllFeatures();
+}
