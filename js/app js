@@ -1,0 +1,455 @@
+// Main application file that initializes and coordinates all modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Import modules
+import { loadTheme, toggleTheme, showSection, showNotification } from './utils.js';
+import { initializeAuth, getCurrentUser } from './auth.js';
+import { initializeBooks, loadBooks, getBooks, showBookDetails } from './books.js';
+import { initializeLoans, requestBook } from './loans.js';
+import { initializeChat } from './chat.js';
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAQZwAqOUHYoz1zICz7PXJt01q0FEJa15o",
+  authDomain: "lectorium-a312d.firebaseapp.com",
+  projectId: "lectorium-a312d",
+  storageBucket: "lectorium-a312d.firebasestorage.app",
+  messagingSenderId: "177236654132",
+  appId: "1:177236654132:web:e00ecfcced130e89f0b261"
+};
+
+// Prevent multiple initializations
+if (!window.lectoriumInitialized) {
+  window.lectoriumInitialized = true;
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Make Firebase instances globally available
+  window.db = db;
+  window.auth = auth;
+
+  // Global application state
+  let currentSection = 'dashboard';
+
+  // Main application class
+  class LectoriumApp {
+    constructor() {
+      this.auth = auth;
+      this.db = db;
+      this.currentUser = null;
+      this.books = [];
+      this.initialized = false;
+    }
+
+    async init() {
+      if (this.initialized) return;
+      this.initialized = true;
+      
+      console.log('Inicializando Lectorium...');
+      
+      try {
+        // Load theme first
+        loadTheme();
+        
+        // Initialize modules
+        this.setupEventListeners();
+        initializeAuth(this.auth);
+        initializeLoans();
+        initializeChat();
+        
+        // Load initial data
+        this.books = await initializeBooks(this.db);
+        
+        // Setup module communication
+        this.setupModuleCommunication();
+        
+        // Initialize analytics if needed
+        this.initializeAnalytics();
+        
+        // Show welcome notification
+        setTimeout(() => {
+          showNotification('¡Bienvenido a Lectorium!', 'success');
+        }, 1000);
+        
+        console.log('Lectorium iniciado correctamente');
+        
+      } catch (error) {
+        console.error('Error initializing Lectorium:', error);
+        showNotification('Error al inicializar la aplicación', 'error');
+      }
+    }
+
+    setupEventListeners() {
+      // Theme toggle
+      const themeToggle = document.getElementById('themeToggle');
+      if (themeToggle && !themeToggle.dataset.listenerAdded) {
+        themeToggle.addEventListener('click', toggleTheme);
+        themeToggle.dataset.listenerAdded = 'true';
+      }
+
+      // Navigation
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        if (!item.dataset.listenerAdded) {
+          item.addEventListener('click', () => {
+            const section = item.getAttribute('data-section');
+            this.navigateToSection(section);
+          });
+          item.dataset.listenerAdded = 'true';
+        }
+      });
+
+      // Notification button
+      const notificationBtn = document.getElementById('notificationBtn');
+      if (notificationBtn && !notificationBtn.dataset.listenerAdded) {
+        notificationBtn.addEventListener('click', () => {
+          this.handleNotificationClick();
+        });
+        notificationBtn.dataset.listenerAdded = 'true';
+      }
+
+      // Profile and history buttons
+      const profileBtn = document.getElementById('profileBtn');
+      const historyBtn = document.getElementById('historyBtn');
+      
+      if (profileBtn && !profileBtn.dataset.listenerAdded) {
+        profileBtn.addEventListener('click', () => {
+          showNotification('Perfil en construcción', 'info');
+          this.closeUserDropdown();
+        });
+        profileBtn.dataset.listenerAdded = 'true';
+      }
+      
+      if (historyBtn && !historyBtn.dataset.listenerAdded) {
+        historyBtn.addEventListener('click', () => {
+          showNotification('Historial en construcción', 'info');
+          this.closeUserDropdown();
+        });
+        historyBtn.dataset.listenerAdded = 'true';
+      }
+
+      // Global keyboard shortcuts
+      if (!document.dataset.keyboardListenerAdded) {
+        document.addEventListener('keydown', (e) => {
+          this.handleKeyboardShortcuts(e);
+        });
+        document.dataset.keyboardListenerAdded = 'true';
+      }
+
+      // Global click handler for dropdowns
+      if (!document.dataset.clickListenerAdded) {
+        document.addEventListener('click', (e) => {
+          this.handleGlobalClick(e);
+        });
+        document.dataset.clickListenerAdded = 'true';
+      }
+
+      // Database filter buttons
+      const filterBtns = document.querySelectorAll('.filter-btn');
+      filterBtns.forEach(btn => {
+        if (!btn.dataset.listenerAdded) {
+          btn.addEventListener('click', () => this.handleFilterClick(btn));
+          btn.dataset.listenerAdded = 'true';
+        }
+      });
+    }
+
+    setupModuleCommunication() {
+      // Listen for auth state changes
+      window.addEventListener('authStateChanged', (event) => {
+        this.currentUser = event.detail;
+        this.handleAuthStateChange(event.detail);
+      });
+
+      // Listen for books updates
+      window.addEventListener('booksUpdated', () => {
+        this.handleBooksUpdate();
+      });
+    }
+
+    navigateToSection(sectionName) {
+      currentSection = showSection(sectionName);
+      
+      // Load section-specific data
+      if (sectionName === 'analytics' && this.currentUser) {
+        setTimeout(() => this.initializeAnalytics(), 100);
+      }
+    }
+
+    handleNotificationClick() {
+      const userLoans = window.getUserLoans ? window.getUserLoans() : [];
+      if (userLoans.length > 0) {
+        this.navigateToSection('loans');
+      } else {
+        showNotification('No tienes notificaciones pendientes', 'info');
+      }
+    }
+
+    handleKeyboardShortcuts(e) {
+      // Escape key closes modals
+      if (e.key === 'Escape') {
+        const modals = ['authModal', 'bookModal'];
+        modals.forEach(modalId => {
+          const modal = document.getElementById(modalId);
+          if (modal && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+          }
+        });
+        
+        const chatWindow = document.getElementById('chatWindow');
+        if (chatWindow && !chatWindow.classList.contains('hidden')) {
+          chatWindow.classList.add('hidden');
+        }
+      }
+      
+      // Ctrl/Cmd + K for search focus
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        this.focusSearchInput();
+      }
+
+      // Number keys for quick navigation (1-6)
+      if (e.altKey && e.key >= '1' && e.key <= '6') {
+        e.preventDefault();
+        const sections = ['dashboard', 'catalogo', 'loans', 'bases-datos', 'analytics', 'servicios'];
+        const sectionIndex = parseInt(e.key) - 1;
+        if (sections[sectionIndex]) {
+          this.navigateToSection(sections[sectionIndex]);
+        }
+      }
+    }
+
+    handleGlobalClick(e) {
+      // Close user dropdown when clicking outside
+      const userMenu = document.getElementById('userMenu');
+      if (userMenu && !userMenu.contains(e.target)) {
+        this.closeUserDropdown();
+      }
+    }
+
+    handleFilterClick(filterBtn) {
+      const filterBtns = document.querySelectorAll('.filter-btn');
+      filterBtns.forEach(btn => btn.classList.remove('active'));
+      filterBtn.classList.add('active');
+      
+      const filterType = filterBtn.textContent.trim();
+      showNotification(`Filtrando por: ${filterType}`, 'info');
+    }
+
+    handleAuthStateChange(user) {
+      if (user) {
+        // User logged in - load user-specific data
+        this.loadUserData();
+      } else {
+        // User logged out - clear user data
+        this.clearUserData();
+      }
+    }
+
+    async handleBooksUpdate() {
+      // Reload books data when books are updated
+      try {
+        this.books = await loadBooks(this.db);
+      } catch (error) {
+        console.error('Error reloading books:', error);
+      }
+    }
+
+    async loadUserData() {
+      // Load user-specific data like loans, history, etc.
+      try {
+        // This will be handled by the loans module
+        console.log('Loading user-specific data...');
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    }
+
+    clearUserData() {
+      // Clear any user-specific data
+      console.log('Clearing user data...');
+    }
+
+    focusSearchInput() {
+      let searchInput;
+      if (currentSection === 'catalogo') {
+        searchInput = document.getElementById('searchInput');
+      } else {
+        searchInput = document.getElementById('heroSearchInput');
+      }
+      
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+
+    closeUserDropdown() {
+      const userDropdown = document.getElementById('userDropdown');
+      if (userDropdown) {
+        userDropdown.classList.add('hidden');
+      }
+    }
+
+    async initializeAnalytics() {
+      // Initialize charts and analytics
+      try {
+        const monthlyCtx = document.getElementById('monthlyChart');
+        const categoryCtx = document.getElementById('categoryChart');
+        
+        if (monthlyCtx && window.Chart) {
+          // Destroy existing chart if it exists
+          if (window.Chart.getChart(monthlyCtx)) {
+            window.Chart.getChart(monthlyCtx).destroy();
+          }
+          
+          new window.Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+              labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+              datasets: [{
+                label: 'Préstamos',
+                data: [12, 19, 15, 25, 22, 30],
+                borderColor: 'rgb(37, 99, 235)',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                tension: 0.4,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.1)'
+                  }
+                },
+                x: {
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.1)'
+                  }
+                }
+              }
+            }
+          });
+        }
+        
+        if (categoryCtx && window.Chart) {
+          // Destroy existing chart if it exists
+          if (window.Chart.getChart(categoryCtx)) {
+            window.Chart.getChart(categoryCtx).destroy();
+          }
+          
+          const categoryCount = {};
+          this.books.forEach(book => {
+            categoryCount[book.categoria] = (categoryCount[book.categoria] || 0) + 1;
+          });
+          
+          new window.Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(categoryCount),
+              datasets: [{
+                data: Object.values(categoryCount),
+                backgroundColor: [
+                  'rgba(37, 99, 235, 0.8)',
+                  'rgba(16, 185, 129, 0.8)',
+                  'rgba(245, 158, 11, 0.8)',
+                  'rgba(239, 68, 68, 0.8)',
+                  'rgba(168, 85, 247, 0.8)',
+                  'rgba(236, 72, 153, 0.8)',
+                  'rgba(6, 182, 212, 0.8)'
+                ],
+                borderWidth: 2,
+                borderColor: 'rgba(255, 255, 255, 1)'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { 
+                  position: 'bottom',
+                  labels: {
+                    padding: 20,
+                    usePointStyle: true
+                  }
+                }
+              }
+            }
+          });
+        }
+        
+        // Update top books
+        this.updateTopBooks();
+        
+      } catch (error) {
+        console.error('Error initializing analytics:', error);
+      }
+    }
+
+    updateTopBooks() {
+      const topBooksContainer = document.getElementById('topBooks');
+      if (!topBooksContainer) return;
+      
+      const topBooks = this.books
+        .sort((a, b) => (b.vecesPrestado || 0) - (a.vecesPrestado || 0))
+        .slice(0, 5);
+      
+      topBooksContainer.innerHTML = topBooks.map((book, index) => `
+        <div class="flex items-center justify-between p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer" onclick="showBookDetails('${book.id}')">
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl font-bold text-purple-600">#${index + 1}</span>
+            <div>
+              <p class="font-semibold">${book.titulo}</p>
+              <p class="text-sm opacity-70">${book.autor}</p>
+            </div>
+          </div>
+          <span class="text-sm font-medium">${book.vecesPrestado || 0} préstamos</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Make key functions available globally for onclick handlers
+  window.showSection = showSection;
+  window.showNotification = showNotification;
+  window.getCurrentUser = getCurrentUser;
+  window.getBooks = getBooks;
+  window.showBookDetails = showBookDetails;
+  window.requestBook = requestBook;
+
+  // Initialize the application when DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!window.lectoriumApp) {
+      const app = new LectoriumApp();
+      window.lectoriumApp = app;
+      app.init();
+    }
+  });
+
+  // Also initialize immediately if DOM is already loaded
+  if (document.readyState === 'loading') {
+    // DOM is still loading
+  } else {
+    // DOM is already loaded
+    if (!window.lectoriumApp) {
+      const app = new LectoriumApp();
+      window.lectoriumApp = app;
+      app.init();
+    }
+  }
+}
+
+// Export for ES modules
+export { LectoriumApp };
